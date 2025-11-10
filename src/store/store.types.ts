@@ -27,8 +27,8 @@ export interface Match {
 export interface TeamsFromComponent {
   pro?: boolean
   is_first_pick_radiant?: any
-  teamA: { name?: string; players: string[]; heroes: string[] }
-  teamB: { name?: string; players: string[]; heroes: string[] }
+  teamA: { name?: string; players: string[]; heroes: string[]; heroPicks: number[] }
+  teamB: { name?: string; players: string[]; heroes: string[]; heroPicks: number[] }
 }
 
 // Prediction payload shape expected by the server

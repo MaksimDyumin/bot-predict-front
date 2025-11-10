@@ -3,54 +3,68 @@ import TeamVue from '@/components/TeamVue.vue'
 import SwitchDefault from '@/components/SwitchDefault.vue'
 import { onMounted, ref, computed } from 'vue'
 import { useMatchStore } from '@/store/match'
+import type { Hero, Player, Team } from '@/store/store.types'
 
 
 const matchStore = useMatchStore()
-const isPro = ref(true)
-const teamASelection = ref({ team: '', heroes: [] as string[], players: [] as string[] })
-const teamBSelection = ref({ team: '', heroes: [] as string[], players: [] as string[] })
+const teamASelection = ref({ team: '', heroes: [] as string[], heroPicks: [] as number[], players: [] as string[] })
+const teamBSelection = ref({ team: '', heroes: [] as string[], heroPicks: [] as number[], players: [] as string[] })
 
-const heroMap = computed(() => Object.fromEntries(matchStore.heroes.map(h => [h.name, h.id])))
-const playerMap = computed(() => Object.fromEntries(matchStore.players.map(p => [p.name ?? p.id, p.id])))
-const teamMap = computed(() => Object.fromEntries(matchStore.teams.map(t => [t.name, t.id])))
+const heroes = computed(() => matchStore.heroes)
+const players = computed(() => matchStore.players)
+const teams = computed(() => matchStore.teams)
 
-const heroNames = computed(() => matchStore.heroes.map(h => h.name))
-const playerNames = computed(() => matchStore.players.map(p => p.name ?? p.id))
-const teamNames = computed(() => matchStore.teams.map(t => t.name))
+// we pass full objects to TeamVue; no separate name arrays needed
 
 onMounted(async ()=>{
   // load data from API (store will fallback to seed if API fails)
   await Promise.all([matchStore.getHeroes(), matchStore.getTeams(), matchStore.getPlayers()])
 })
 
-function onASelectHero(payload: { index: number; hero: string }) {
-  const id = heroMap.value[payload.hero]
-  if (id) teamASelection.value.heroes[payload.index] = id
+function onASelectHero(payload: { index: number; hero: Hero; pick: number }) {
+  if (payload?.hero?.id) {
+    teamASelection.value.heroes[payload.index] = payload.hero.id
+    teamASelection.value.heroPicks[payload.index] = payload.pick
+  }
 }
 
-function onASelectPlayer(payload: { index: number; player: string }) {
-  const id = playerMap.value[payload.player]
-  if (id) teamASelection.value.players[payload.index] = id
+function onASelectPlayer(payload: { index: number; player: Player }) {
+  if (payload?.player?.id) {
+    teamASelection.value.players[payload.index] = payload.player.id
+  }
 }
 
-function onASelectTeam(team: string) {
-  const id = teamMap.value[team]
-  if (id) teamASelection.value.team = id
+function onASelectTeam(team: Team) {
+  if (team?.id) {
+    teamASelection.value.team = team.id
+  }
 }
 
-function onBSelectHero(payload: { index: number; hero: string }) {
-  const id = heroMap.value[payload.hero]
-  if (id) teamBSelection.value.heroes[payload.index] = id
+function onBSelectHero(payload: { index: number; hero: Hero; pick: number }) {
+  if (payload?.hero?.id) {
+    teamBSelection.value.heroes[payload.index] = payload.hero.id
+    teamBSelection.value.heroPicks[payload.index] = payload.pick
+  }
 }
 
-function onBSelectPlayer(payload: { index: number; player: string }) {
-  const id = playerMap.value[payload.player]
-  if (id) teamBSelection.value.players[payload.index] = id
+function onBSelectPlayer(payload: { index: number; player: Player }) {
+  if (payload?.player?.id) {
+    teamBSelection.value.players[payload.index] = payload.player.id
+  }
 }
 
-function onBSelectTeam(team: string) {
-  const id = teamMap.value[team]
-  if (id) teamBSelection.value.team = id
+function onBSelectTeam(team: Team) {
+  if (team?.id) {
+    teamBSelection.value.team = team.id
+  }
+}
+
+function onASelectPos(heroPick: {pos: number, index: number}) {
+  teamASelection.value.heroPicks[heroPick.index] = heroPick.pos
+}
+
+function onBSelectPos(heroPick: {pos: number, index: number}) {
+  teamBSelection.value.heroPicks[heroPick.index] = heroPick.pos
 }
 
 const prediction = ref<boolean>(false)
@@ -66,15 +80,19 @@ async function makePredict() {
       while (out.length < 5) out.push('')
       return out
     }
+    const padPicks = (arr: number[]) => {
+      const out = arr ? arr.slice(0, 5) : []
+      while (out.length < 5) out.push(0)
+      return out
+    }
     const input = {
       is_first_pick_radiant: is_first_pick_dire.value ? 0 : 1,
-      teamA: { name: teamASelection.value.team, heroes: pad(teamASelection.value.heroes), players: pad(teamASelection.value.players) },
-      teamB: { name: teamBSelection.value.team, heroes: pad(teamBSelection.value.heroes), players: pad(teamBSelection.value.players) },
+      teamA: { name: teamASelection.value.team, heroes: pad(teamASelection.value.heroes), players: pad(teamASelection.value.players), heroPicks: padPicks(teamASelection.value.heroPicks) },
+      teamB: { name: teamBSelection.value.team, heroes: pad(teamBSelection.value.heroes), players: pad(teamBSelection.value.players), heroPicks: padPicks(teamBSelection.value.heroPicks) },
     }
     const res: any = await matchStore.makePredict(input)
     predRes.value = res
     prediction.value = true
-    console.log(res)
   } catch (err: any) {
     console.log(err)
   }
@@ -95,12 +113,13 @@ async function makePredict() {
         <TeamVue
           :pro="true"
           :teamName="'Team Radiant'"
-          :heroes="heroNames"
-          :players="playerNames"
-          :teams="teamNames"
+          :heroes="heroes"
+          :players="players"
+          :teams="teams"
           @select-hero="onASelectHero"
           @select-player="onASelectPlayer"
           @select-team="onASelectTeam"
+          @select-pos="onASelectPos"
         />
       </div>
 
@@ -110,12 +129,13 @@ async function makePredict() {
         <TeamVue
           :pro="true"
           :teamName="'Team Dire'"
-          :heroes="heroNames"
-          :players="playerNames"
-          :teams="teamNames"
+          :heroes="heroes"
+          :players="players"
+          :teams="teams"
           @select-hero="onBSelectHero"
           @select-player="onBSelectPlayer"
           @select-team="onBSelectTeam"
+          @select-pos="onBSelectPos"
         />
       </div>
     </div>
@@ -127,8 +147,8 @@ async function makePredict() {
     <div class="predict-result">
       <div v-if="predictError" class="error">{{ predictError }}</div>
       <div v-else-if="prediction" class="result">
-        <div class="winner">Pro: Radiant: {{ `${predRes.data.pro.radiant_win}`.slice(0,2) }}% | Dire: {{ `${predRes.data.pro.dire_win}`.slice(0,2) }}%</div>
-        <div class="winner">Pub: Radiant: {{ `${predRes.data?.pub?.radiant_win}`.slice(0,2) }}% | Dire: {{ `${predRes.data?.pub?.dire_win}`.slice(0,2) }}%</div>
+        <div class="winner">Pro: Radiant: {{ `${predRes?.data?.pro?.radiant_win}`.slice(0,2) }}% | Dire: {{ `${predRes?.data?.pro?.dire_win}`.slice(0,2) }}%</div>
+        <div class="winner">Pub: Radiant: {{ `${predRes?.data?.pub?.radiant_win}`.slice(0,2) }}% | Dire: {{ `${predRes?.data?.pub?.dire_win}`.slice(0,2) }}%</div>
         
       </div>
     </div>

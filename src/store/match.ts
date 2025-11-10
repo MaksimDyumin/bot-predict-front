@@ -167,10 +167,14 @@ export const useMatchStore = defineStore('match', () => {
         payload[`d_h${i + 1}`] = matchIdOrData.teamB.heroes?.[i]
         payload[`r_p${i + 1}`] = matchIdOrData.teamA.players?.[i]
         payload[`d_p${i + 1}`] = matchIdOrData.teamB.players?.[i]
+
+        payload[`rp_h${i + 1}`] = matchIdOrData.teamA.heroPicks?.[i]
+        payload[`dp_h${i + 1}`] = matchIdOrData.teamB.heroPicks?.[i]
       }
       payload.is_first_pick_radiant = matchIdOrData.is_first_pick_radiant
-      const res = await axios.post(`${BASE_API}/draft/predict`, payload, { headers: { 'Content-Type': 'application/json' } })
-      return res
+      console.log(payload)
+      // const res = await axios.post(`${BASE_API}/draft/predict`, payload, { headers: { 'Content-Type': 'application/json' } })
+      // return res
   }
 
   return {

@@ -18,7 +18,7 @@
 
         <ul class="modal-list">
           <li v-for="(item, idx) in filteredItems" :key="idx">
-            <button class="modal-item" @click="select(item)">{{ item }}</button>
+            <button class="modal-item" @click="select(item)">{{ item.name ?? item.id }}</button>
           </li>
         </ul>
       </div>
@@ -30,12 +30,12 @@
 import { defineProps, defineEmits, ref, computed, watch, onUnmounted } from 'vue'
 
 const props = defineProps<{
-  items: string[];
+  items: any[];
   title?: string;
 }>()
 
 const emit = defineEmits<{
-  (e: 'select', item: string): void;
+  (e: 'select', item: any): void;
   (e: 'close'): void;
 }>()
 
@@ -57,10 +57,10 @@ onUnmounted(() => {
 
 const filteredItems = computed(() => {
   if (!debounced.value) return props.items
-  return props.items.filter(i => i.toLowerCase().includes(debounced.value))
+  return props.items.filter(i => ((i?.name ?? i?.id ?? '') as string).toLowerCase().includes(debounced.value))
 })
 
-function select(item: string) {
+function select(item: { name: string; [k: string]: any }) {
   emit('select', item)
 }
 

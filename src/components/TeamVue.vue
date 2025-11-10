@@ -3,22 +3,31 @@
     <div class="team-block" @click="openTeamModal">{{ selectedTeamLabel }}</div>
 
     <div class="main-blocks">
-      <div
-        v-for="(slot, idx) in 5"
-        :key="idx"
-        class="slot-block"
-        @click.stop="openHeroesModal(idx)">
-        <div class="slot-label">{{ heroSlots[idx] || 'Choose hero' }}</div>
+      <div v-for="(_, idx) in 5" :key="idx" class="hero-slot-group">
+        <input 
+          type="number" 
+          class="pick-order-input"
+          :value="heroPicks[idx]"
+          @input="emitPos($event, idx)"
+          min="0"
+          max="10"
+          placeholder="Pick #"
+        />
+        <div
+          class="slot-block"
+          @click.stop="openHeroesModal(idx)">
+          <div class="slot-label">{{ heroSlots[idx]?.name || 'Choose hero' }}</div>
+        </div>
       </div>
     </div>
 
     <div v-if="pro" class="extra-blocks">
       <div
-        v-for="(slot, idx) in 5"
+        v-for="(_, idx) in 5"
         :key="idx"
         class="slot-block extra"
         @click.stop="openPlayersModal(idx)">
-        <div class="slot-label">{{ playerSlots[idx] || 'Choose player' }}</div>
+        <div class="slot-label">{{ playerSlots[idx]?.name || 'Choose player' }}</div>
       </div>
     </div>
 
@@ -35,48 +44,47 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import Modal from '@/components/Modal.vue'
+import type { Hero, Player, Team } from '@/store/store.types';
 
 const props = defineProps<{
   pro?: boolean
   teamName?: string
-  teams?: string[]
-  heroes?: string[]
-  players?: string[]
+  teams?: Team[]
+  heroes?: Hero[]
+  players?: Player[]
 }>()
 
 const emit = defineEmits<{
-  (e: 'select-hero', payload: { index: number; hero: string }): void
-  (e: 'select-player', payload: { index: number; player: string }): void
-  (e: 'select-team', team: string): void
+  (e: 'select-hero', payload: { index: number; hero: Hero; pick: number }): void
+  (e: 'select-player', payload: { index: number; player: Player }): void
+  (e: 'select-team', team: Team): void
+  (e: 'select-pos', pos: any): void
 }>()
 
 const pro = computed(() => !!props.pro)
 
-// default items if not provided
-const defaultHeroes = [ 'Hero A', 'Hero B', 'Hero C', 'Hero D', 'Hero E' ]
-const defaultPlayers = [ 'Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5' ]
-const defaultTeams = [ 'Team Liquid', 'Team Secret', 'OG', 'Nigma', 'Virtus.pro' ]
-
-const heroSlots = ref<(string | null)[]>(Array(5).fill(null))
-const playerSlots = ref<(string | null)[]>(Array(5).fill(null))
-const selectedTeam = ref<string | null>(props.teamName ?? null)
+const heroSlots = ref<(Hero | null)[]>(Array(5).fill(null))
+const heroPicks = ref<number[]>(Array(5).fill(0))
+const playerSlots = ref<(Player | null)[]>(Array(5).fill(null))
+const selectedTeam = ref<Team | null>(props.teams?.find(t => t.name === props.teamName) ?? null)
 
 const showModal = ref(false)
-const modalItems = ref<string[]>([])
+const modalItems = ref<Array<Hero | Player | Team>>([])
 const modalTitle = ref<string>('')
 const modalMode = ref<'hero' | 'player' | 'team' | null>(null)
 const modalIndex = ref<number | null>(null)
 
-const selectedTeamLabel = computed(() => selectedTeam.value ? selectedTeam.value : (props.teamName ?? 'Select team'))
+const selectedTeamLabel = computed(() => selectedTeam.value ? selectedTeam.value.name : (props.teamName ?? 'Select team'))
+
+function emitPos(e: Event, idx: number) {
+  heroPicks.value[idx] = parseInt((e.target as HTMLInputElement).value) || 0
+  emit('select-pos', { pos: heroPicks.value[idx], index: idx })
+}
 
 function openTeamModal() {
   modalMode.value = 'team'
   // prefer teams provided via props, fallback to defaults
-  if (props.teams?.length) {
-    modalItems.value = props.teamName ? [props.teamName, ...props.teams] : props.teams
-  } else {
-    modalItems.value = props.teamName ? [props.teamName, ...defaultTeams] : defaultTeams
-  }
+  modalItems.value = props.teams?.length ? props.teams : []
   modalTitle.value = 'Choose team'
   showModal.value = true
 }
@@ -84,7 +92,7 @@ function openTeamModal() {
 function openHeroesModal(index: number) {
   modalMode.value = 'hero'
   modalIndex.value = index
-  modalItems.value = props.heroes?.length ? props.heroes : defaultHeroes
+  modalItems.value = props.heroes?.length ? props.heroes : []
   modalTitle.value = 'Choose hero'
   showModal.value = true
 }
@@ -92,22 +100,23 @@ function openHeroesModal(index: number) {
 function openPlayersModal(index: number) {
   modalMode.value = 'player'
   modalIndex.value = index
-  modalItems.value = props.players?.length ? props.players : defaultPlayers
+  modalItems.value = props.players?.length ? props.players : []
   modalTitle.value = 'Choose player'
   showModal.value = true
 }
 
-function onModalSelect(item: string) {
+function onModalSelect(item: Hero | Player | Team) {
   if (modalMode.value === 'hero' && modalIndex.value !== null) {
-    heroSlots.value[modalIndex.value] = item
-    emit('select-hero', { index: modalIndex.value, hero: item })
+    heroSlots.value[modalIndex.value] = item as Hero
+    emit('select-hero', { index: modalIndex.value, hero: item as Hero, pick: heroPicks.value[modalIndex.value] ?? 0 })
   } else if (modalMode.value === 'player' && modalIndex.value !== null) {
-    playerSlots.value[modalIndex.value] = item
-    emit('select-player', { index: modalIndex.value, player: item })
+    playerSlots.value[modalIndex.value] = item as Player
+    emit('select-player', { index: modalIndex.value, player: item as Player })
   } else if (modalMode.value === 'team') {
-    selectedTeam.value = item
-    emit('select-team', item)
+    selectedTeam.value = item as Team
+    emit('select-team', item as Team)
   }
+  
   closeModal()
 }
 
@@ -147,6 +156,29 @@ function closeModal() {
   gap: 0.5rem;
   width: 100%;
   max-width: 700px;
+}
+
+.hero-slot-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pick-order-input {
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  text-align: center;
+  font-weight: 600;
+  background: #f3f4f6;
+}
+
+.pick-order-input:focus {
+  outline: none;
+  border-color: #0ea5ff;
+  background: #fff;
 }
 
 .slot-block {

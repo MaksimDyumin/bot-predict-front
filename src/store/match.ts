@@ -173,8 +173,8 @@ export const useMatchStore = defineStore('match', () => {
       }
       payload.is_first_pick_radiant = matchIdOrData.is_first_pick_radiant
       console.log(payload)
-      // const res = await axios.post(`${BASE_API}/draft/predict`, payload, { headers: { 'Content-Type': 'application/json' } })
-      // return res
+      const res = await axios.post(`${BASE_API}/draft/predict`, payload, { headers: { 'Content-Type': 'application/json' } })
+      return res
   }
 
   return {

@@ -14,7 +14,7 @@
           placeholder="Pick #"
         />
         <div
-          class="slot-block"
+          :class="['slot-block', { selected: heroSlots[idx] !== null }]"
           @click.stop="openHeroesModal(idx)">
           <div class="slot-label">{{ heroSlots[idx]?.name || 'Choose hero' }}</div>
         </div>
@@ -25,7 +25,7 @@
       <div
         v-for="(_, idx) in 5"
         :key="idx"
-        class="slot-block extra"
+        :class="['slot-block', 'extra', { selected: playerSlots[idx] !== null }]"
         @click.stop="openPlayersModal(idx)">
         <div class="slot-label">{{ playerSlots[idx]?.name || 'Choose player' }}</div>
       </div>
@@ -127,6 +127,15 @@ function closeModal() {
   modalItems.value = []
   modalTitle.value = ''
 }
+
+function resetSelection() {
+  heroSlots.value = Array(5).fill(null)
+  heroPicks.value = Array(5).fill(0)
+  playerSlots.value = Array(5).fill(null)
+  selectedTeam.value = props.teams?.find(t => t.name === props.teamName) ?? null
+}
+
+defineExpose({ resetSelection })
 </script>
 
 <style scoped>
@@ -192,6 +201,17 @@ function closeModal() {
 
 .slot-block.extra {
   background: #f9fafb;
+}
+
+.slot-block.selected {
+  background: #e6f9ff;
+  border-color: #38bdf8;
+  box-shadow: 0 6px 18px rgba(14,165,255,0.12);
+}
+
+.slot-block.extra.selected {
+  background: #f0f9ff;
+  border-color: #60a5fa;
 }
 
 .slot-label {

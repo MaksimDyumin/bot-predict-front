@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, computed, watch, onUnmounted } from 'vue'
+import { defineProps, ref, computed, watch, onUnmounted } from 'vue'
 
 const props = defineProps<{
   items: any[];

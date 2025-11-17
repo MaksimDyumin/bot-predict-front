@@ -212,7 +212,7 @@ function addModelResult() {
       <div v-if="predictError" class="error">{{ predictError }}</div>
       <div v-else-if="prediction" class="result">
           <div v-for="mode in aiModels" :key="mode" class="winner">
-            <b>{{ mode }}</b> Radiant: {{ String(predRes?.[mode]?.radiant_win ?? '').slice(0,2) }}% | Dire: {{ String(predRes?.data?.[mode]?.dire_win ?? '').slice(0,2) }}%
+            <b>{{ mode }}</b> Radiant: {{ String(predRes?.[mode]?.radiant_win ?? '').slice(0,2) }}% | Dire: {{ String(predRes?.[mode]?.dire_win ?? '').slice(0,2) }}%
           </div>
           <div class="add-model-block">
             <input type="text" v-model="addAiModelInput">
